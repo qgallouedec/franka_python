@@ -11,3 +11,10 @@ roslaunch pkg file.launch
 ```python
 import franka_gym
 ```
+
+
+## RealSense
+
+```bash
+roslaunch realsense2_camera rs_camera.launch 
+```
