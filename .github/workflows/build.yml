@@ -23,7 +23,8 @@ jobs:
         source /opt/ros/melodic/setup.bash
     - name: Install Franka packages
       run: |
-        sudo apt-get install -y -f ros-melodic-libfranka ros-melodic-franka-ros ros-melodic-moveit ros-melodic-moveit-visual-tools
+        sudo apt-get -f install
+        sudo apt-get install -y ros-melodic-libfranka ros-melodic-franka-ros ros-melodic-moveit ros-melodic-moveit-visual-tools
     - name: Install Panda MoveIt config
       run: |
         mkdir -p catkin_ws/src
