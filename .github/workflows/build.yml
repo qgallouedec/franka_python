@@ -4,18 +4,9 @@ on: [push]
 
 jobs:
   build:
-
     runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        python-version: [3.6, 3.7, 3.8]
-
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
     - name: Install ROS
       run: |
         sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
@@ -23,9 +14,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y ros-melodic-ros-base ros-melodic-actionlib
         source /opt/ros/melodic/setup.bash
-    - name: Install actionlib
-      run: |
-        sudo apt-get install -y ros-melodic-actionlib
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -39,4 +27,4 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
+        python3 -m pytest
