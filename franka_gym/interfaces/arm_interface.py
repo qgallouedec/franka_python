@@ -190,4 +190,3 @@ if __name__ == '__main__':
     arm.move_to_neutral()
     time.sleep(2)
     arm.move_joint('panda_joint1', 0.1)
-    
