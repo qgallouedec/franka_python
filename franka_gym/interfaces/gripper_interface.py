@@ -21,7 +21,7 @@ class GripperInterface:
 
         self._width = None
         self._joint_states_state_sub = subscriber(
-            ns + 'joint_states', JointState, self._joint_states_callback, queue_size=1, tcp_nodelay=True)
+            ns + 'joint_states', JointState, self._joint_states_callback, tcp_nodelay=True)
 
         self._homing_action_client = actionlib.SimpleActionClient(
             '{}homing'.format(ns), HomingAction)
@@ -41,13 +41,14 @@ class GripperInterface:
         self.MAX_FORCE = 100
 
         self.MIN_WIDTH = 0.00
-        self.MAX_WIDTH = 0.04
+        self.MAX_WIDTH = 0.08
 
     def _joint_states_callback(self, msg: JointState) -> None:
         """Called when a message is published on `joint_states` topic.
         Update private attribute `_joint_state`.
         """
-        self._width = 2*msg.position[0]
+        idx = msg.name.index('panda_finger_joint1')
+        self._width = 2*msg.position[idx]
 
     def _clip_width(self, width: float) -> float:
         """Clip the width to in interval [MIN_WIDTH, MAX_WIDTH].
@@ -111,7 +112,7 @@ class GripperInterface:
             return True
 
     def move(self, width: float, speed: float = 0.05,
-             wait_for_result: bool = True) -> bool:
+             wait_for_result: bool = False) -> bool:
         """Moves the gripper fingers to a specified width.
 
         Args:
@@ -127,6 +128,7 @@ class GripperInterface:
         goal = MoveGoal()
         goal.width = width
         goal.speed = speed
+        self._move_action_client.send_goal(goal)
         if wait_for_result:
             return self._move_action_client.wait_for_result(
                 timeout=rospy.Duration(15.))
@@ -161,7 +163,7 @@ class GripperInterface:
 
     def grasp(self, width: float, force: float, speed: float = 0.05,
               epsilon_inner: float = 0.005, epsilon_outer: float = 0.005,
-              wait_for_result: bool = True) -> bool:
+              wait_for_result: bool = False) -> bool:
         """Grasps an object.
 
         First, the gripper moves with speed `speed` in the direction of `width`:

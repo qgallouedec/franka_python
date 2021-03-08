@@ -1,2 +1,2 @@
 from franka_gym.interfaces.gripper_interface import GripperInterface
-# from franka_gym.interfaces.arm_interface import ArmInterface
+from franka_gym.interfaces.arm_interface import ArmInterface
