@@ -1,5 +1,7 @@
 # franka_gym
 
+[![Actions Status](https://github.com/qgallouedec/franka_gym/workflows/build/badge.svg)](https://github.com/qgallouedec/franka_gym/actions)
+
 Real OpenAI gym interface for Franka Emika Panda robot
 
 ## Usage
