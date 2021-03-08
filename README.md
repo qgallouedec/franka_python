@@ -4,10 +4,27 @@
 
 Real OpenAI gym interface for Franka Emika Panda robot
 
+
+## Installation
+
+Install `libfranka` and `franka-ros` (more details [here](https://frankaemika.github.io/docs/installation_linux.html))
+
+```bash
+sudo apt install ros-melodic-libfranka ros-melodic-franka-ros
+```
+
+Clone the repository and install it.
+
+```bash
+git clone https://github.com/qgallouedec/franka_gym
+pip install -e franka_gym
+```
+
+
 ## Usage
 
 ```bash
-roslaunch pkg file.launch
+roslaunch panda_moveit_config panda_control_moveit_rviz.launch robot_ip:=<robot_ip>
 ```
 
 ```python

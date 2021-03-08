@@ -19,14 +19,20 @@ jobs:
         sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
         sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
         sudo apt-get update
-        sudo apt-get install -y ros-melodic-ros-base ros-melodic-actionlib
+        sudo apt-get install -y ros-melodic-ros-base ros-melodic-catkin ros-melodic-catkin-tools
         source /opt/ros/melodic/setup.bash
-    - name: Install dependencies
+    - name: Install Franka packages
       run: |
-        python -m pip install --upgrade pip
-        python3 -m pip install --upgrade pip
-        python3 -m pip install pytest
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Test with pytest
+        sudo apt-get install -y ros-melodic-libfranka ros-melodic-franka-ros ros-melodic-moveit ros-melodic-moveit-visual-tools
+    - name: Install Panda MoveIt config
       run: |
-        python3 -m pytest
+        mkdir -p catkin_ws/src
+        cd catkin_ws/src
+        git clone https://github.com/ros-planning/panda_moveit_config.git -b melodic-devel
+        cd ..
+        catkin build
+        source devel/setup.bash
+    - name: Run demo
+      run: |
+        roslaunch panda_moveit_config demo.launch
+
