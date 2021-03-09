@@ -24,6 +24,8 @@ jobs:
           cd ~/catkin_ws/src
           cp -r $GITHUB_WORKSPACE .
           git clone https://github.com/ros-planning/panda_moveit_config.git -b melodic-devel
+          sudo rosdep init
+          rosdep update
           rosdep install -y --from-paths . --ignore-src --rosdistro melodic
           /bin/bash -c "source ../devel/setup.bash && catkin build"
 
