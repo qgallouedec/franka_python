@@ -30,4 +30,5 @@ jobs:
 
       - name: Run demo
         run: |
-          /bin/bash -c "roslaunch panda_moveit_config demo.launch"
+          source ../devel/setup.bash
+          roslaunch panda_moveit_config demo.launch
