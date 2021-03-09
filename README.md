@@ -7,11 +7,7 @@ Real OpenAI gym interface for Franka Emika Panda robot
 
 ## Installation
 
-Install `libfranka` and `franka-ros` (more details [here](https://frankaemika.github.io/docs/installation_linux.html))
-
-```bash
-sudo apt install ros-melodic-libfranka ros-melodic-franka-ros
-```
+- Install `libfranka` and `franka-ros` (more details [here](https://frankaemika.github.io/docs/installation_linux.html))
 
 Clone the repository and install it.
 
@@ -19,7 +15,6 @@ Clone the repository and install it.
 git clone https://github.com/qgallouedec/franka_gym
 pip install -e franka_gym
 ```
-
 
 ## Usage
 
