@@ -12,9 +12,7 @@ jobs:
           apt-get update
           apt-get install -y python-pip
           apt-get install -y ros-melodic-catkin python-catkin-tools
-          apt-get install -y ros-melodic-cv-bridge
-          apt-get install -y ros-melodic-roslint
-          pip install bluerobotics-ping
+          apt-get install ros-melodic-libfranka ros-melodic-franka-ros
       - name: Setup catkin workspace
         run: |
           mkdir -p ~/catkin_ws/src
@@ -25,8 +23,9 @@ jobs:
         run: |
           cd ~/catkin_ws/src
           cp -r $GITHUB_WORKSPACE .
+          git clone https://github.com/ros-planning/panda_moveit_config.git -b melodic-devel
           /bin/bash -c "source ../devel/setup.bash && catkin build"
-      - name: Lint
+
+      - name: Run demo
         run: |
-          cd ~/catkin_ws/src
-          catkin build ping360_sonar --catkin-make-args roslint
+          roslaunch panda_moveit_config demo.launch
