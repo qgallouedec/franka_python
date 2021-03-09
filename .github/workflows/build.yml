@@ -12,7 +12,7 @@ jobs:
           apt-get update
           apt-get install -y python-pip
           apt-get install -y ros-melodic-catkin python-catkin-tools
-          apt-get install ros-melodic-libfranka ros-melodic-franka-ros
+          apt-get install -y ros-melodic-libfranka ros-melodic-franka-ros
       - name: Setup catkin workspace
         run: |
           mkdir -p ~/catkin_ws/src
