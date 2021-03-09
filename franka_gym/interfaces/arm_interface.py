@@ -1,15 +1,20 @@
+import os
 import http.client
 import subprocess
-import os
 from math import pi
 import json
 import copy
 import time
-import rospy
-from franka_gym.utils import subscriber
+from typing import List, Tuple
 
+import rospy
 from sensor_msgs.msg import JointState
 
+from franka_gym.utils import subscriber
+
+Position = Tuple[float, float, float]
+Orientation = Tuple[float, float, float, float]
+Pose = Tuple[Position, Orientation]
 
 class ArmInterface:
     JOINT_NAMES = [
@@ -43,7 +48,8 @@ class ArmInterface:
         self._run_helper()
 
         self._joint_states_state_sub = subscriber(
-            '/joint_states', JointState, self._joint_states_callback, tcp_nodelay=True, timeout=1)
+            '/joint_states', JointState, self._joint_states_callback,
+            tcp_nodelay=True, timeout=1)
 
         self._joint_positions = list(range(7))
         self._joint_velocities = list(range(7))
@@ -73,10 +79,19 @@ class ArmInterface:
                 self._joint_velocities[idx] = msg.velocity[msg_idx]
                 self._joint_efforts[idx] = msg.effort[msg_idx]
 
-    def _send_request(self, req):
+    def _send_call_helper(self, func_name: str, *args, **kwargs):
+        req = {'type': 'call',
+               'func_name': func_name,
+               'args': args,
+               'kwargs': kwargs}
+        ans = self._send_request_helper(req)
+        return ans['out']
+
+    def _send_request_helper(self, req: dict) -> str:
         """Send request to arm_interface helper."""
         self._connection.request('POST', '/process', json.dumps(req))
-        return self._connection.getresponse().read()
+        ans = self._connection.getresponse().read()
+        return json.loads(ans)
 
     def get_joint_position(self, joint_name: str) -> float:
         """Return the last measured position of the joint.
@@ -90,7 +105,7 @@ class ArmInterface:
         idx = self.JOINT_NAMES.index(joint_name)
         return self._joint_positions[idx]
 
-    def get_joint_positions(self) -> list:
+    def get_joint_positions(self) -> List[float]:
         """Return the last measured positions of every joints.
 
         Returns:
@@ -110,7 +125,7 @@ class ArmInterface:
         idx = self.JOINT_NAMES.index(joint_name)
         return self._joint_velocities[idx]
 
-    def get_joint_velocities(self) -> list:
+    def get_joint_velocities(self) -> List[float]:
         """Return the last measured velocitiy of every joints.
 
         Returns:
@@ -130,7 +145,7 @@ class ArmInterface:
         idx = self.JOINT_NAMES.index(joint_name)
         return self._joint_efforts[idx]
 
-    def get_joint_efforts(self) -> list:
+    def get_joint_efforts(self) -> List[float]:
         """Return the last measured effort of every joints.
 
         Returns:
@@ -138,17 +153,24 @@ class ArmInterface:
         """
         return copy.deepcopy(self._joint_efforts)
 
-    def move_joints(self, positions: tuple):
+    def get_ee_pose(self) -> Pose:
+        """Return the cartesian position of the end-effector
+
+        Returns:
+            Pose: Position and orientation of the end-effector
+        """
+        pose = self._send_call_helper('get_current_pose')
+        return pose
+
+    def move_joints(self, positions: Position) -> None:
         """Move joint toward the given position.
 
         Args:
             positions (float): Joint positions.
         """
-        req = {'type': 'move_joints',
-               'goal': positions}
-        self._send_request(req)
+        self._send_call_helper('move_joints', positions)
 
-    def move_joint(self, joint_name: str, position: tuple):
+    def move_joint(self, joint_name: str, position: float) -> None:
         """Move joint toward the given position.
 
         Args:
@@ -158,21 +180,17 @@ class ArmInterface:
         positions = copy.deepcopy(self._joint_positions)
         idx = self.JOINT_NAMES.index(joint_name)
         positions[idx] = position
-        req = {'type': 'move_joints',
-               'goal': positions}
-        self._send_request(req)
+        self.move_joints(positions)
 
-    def move_ee(self, position: tuple, orientation: tuple) -> None:
-        """Move joint toward the given position.
+    def move_ee(self, position: Position, orientation: Orientation) -> None:
+        """Move end-effector toward the given pose.
 
         Args:
-            joint_name (str): Joint name.
-            position (float): Joint position.
+            position (float): End-effector taget position.
+            orientation (float): End-effector taget orientation (as quaternion).
         """
-        goal = (0.4, 0.1, 0.1, 1, 0, 0, 0)
-        req = {'type': 'move_ee',
-               'goal': goal}
-        self._send_request(req)
+        pose = (*position, *orientation)
+        self._send_call_helper('move_ee', pose)
 
     def move_to_neutral(self):
         """Move the robot to go to its neutral position."""
@@ -186,7 +204,19 @@ class ArmInterface:
 if __name__ == '__main__':
     import time
     arm = ArmInterface()
-    goal = (-0, -pi/4, 0, -pi/2, 0.2, pi/3, 0)
+    print('Moving to neutral')
     arm.move_to_neutral()
-    time.sleep(2)
-    arm.move_joint('panda_joint1', 0.1)
+    time.sleep(5)
+
+    print('Moving joint 1')
+    arm.move_joint('panda_joint1', 0.2)
+    time.sleep(5)
+
+    print('Moving all joints')
+    goal = (-0, -pi/4, 0, -pi/2, 0.2, pi/3, 0)
+    arm.move_joints(goal)
+    time.sleep(5)
+
+    print('moving end effector')
+    arm.move_ee(position=(0.4, 0.1, 0.1), orientation=(1, 0, 0, 0))
+    time.sleep(5)

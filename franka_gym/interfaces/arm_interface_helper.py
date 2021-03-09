@@ -34,7 +34,12 @@
 #
 # Author: Acorn Pooley, Mike Lautman
 
-"""Python2 helper code to command robot"""
+"""This is a python2 heper script to use `moveit_commander`.
+
+`moveit_commander` is not usable with python3. To prevent me from compiling a
+catkin worspace with python3 and potentially breaking compatibility with other
+components, I created this script that allows bridging the python3 script with
+the python2 script."""
 
 import json
 import sys
@@ -75,7 +80,7 @@ class FrankaInterface(object):
         self.move_group.go(joint_goal, wait=True)
         self.move_group.stop()  # ensures that there is no residual movement
 
-    def go_to_pose_goal(self, goal):
+    def move_ee(self, goal):
         """Move cartesian."""
         pose_goal = geometry_msgs.msg.Pose()
         pose_goal.position.x = goal[0]
@@ -88,8 +93,19 @@ class FrankaInterface(object):
         self.move_group.set_pose_target(pose_goal)
         self.move_group.go(wait=True)
         self.move_group.stop()  # ensures that there is no residual movement
-        # It is always good to clear your targets after planning with poses.
         self.move_group.clear_pose_targets()
+
+    def get_current_joint_values(self):
+        joint_values = self.move_group.get_current_joint_values()
+        return joint_goal[:7]
+    
+    def get_current_pose(self, end_effector_link='panda_link8'):
+        """Get current pose"""
+        return self.move_group.get_current_pose(end_effector_link)
+
+    def get_current_rpy(self, end_effector_link='panda_link8'):
+        """Get current rool, pitch, yaw."""
+        return self.move_group.get_current_rpy(end_effector_link)
 
     def display_trajectory(self, plan):
         """Display trajectory."""
@@ -103,17 +119,19 @@ class FrankaInterface(object):
 def my_process():
     req_obj = json.loads(request.body.read())
     req_type = req_obj['type']
-    if req_type == 'move_joints':
-        fi.move_joints(req_obj['goal'])
-    elif req_type == 'move_ee':
-        fi.go_to_pose_goal(req_obj['goal'])
-    elif req_type == 'ready':
+    out = None
+    if req_type == 'ready':
         pass
-    return True
+    elif req_type == 'call':
+        func = getattr(fi, req_obj['func_name'])
+        out = func(*req_obj['args'], **req_obj['kwargs'])
+    else:
+        raise RuntimeError('unknown req_type %s' %req_type)
+    return {'out': out}
 
 
 if __name__ == '__main__':
-    rospy.init_node('move_group_python_interface_tutorial',
+    rospy.init_node('arm_interface_helper',
                     anonymous=True, disable_signals=True)
     fi = FrankaInterface()
     run(host='localhost', port=8080, debug=True)
