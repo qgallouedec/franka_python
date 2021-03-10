@@ -52,6 +52,7 @@ class RealSenseInterface:
                 colormap whose maximum value is determined by this argument.
                 Defaults to 2**16.
         """
+        rospy.init_node('RealSenseInterfaceNode', anonymous=True, disable_signals=True)
         self.ns = '/camera/'
 
         self.buffer_size = buffer_size
@@ -311,7 +312,6 @@ class RealSenseInterface:
 
 
 if __name__ == '__main__':
-    rospy.init_node('test_node', anonymous=True, disable_signals=True)
     r = RealSenseInterface(buffer_size = 10, display=True, display_fps=10, display_depth_min=30, display_depth_max=10000)
     import time
     time.sleep(3)

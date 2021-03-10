@@ -97,11 +97,15 @@ class FrankaInterface(object):
 
     def get_current_joint_values(self):
         joint_values = self.move_group.get_current_joint_values()
-        return joint_goal[:7]
+        return joint_values[:7]
     
     def get_current_pose(self, end_effector_link='panda_link8'):
         """Get current pose"""
-        return self.move_group.get_current_pose(end_effector_link)
+        pose = self.move_group.get_current_pose(end_effector_link).pose
+        return (
+            (pose.position.x, pose.position.y, pose.position.z),
+            (pose.orientation.x, pose.orientation.y,
+            pose.orientation.z, pose.orientation.w))
 
     def get_current_rpy(self, end_effector_link='panda_link8'):
         """Get current rool, pitch, yaw."""
@@ -134,4 +138,4 @@ if __name__ == '__main__':
     rospy.init_node('arm_interface_helper',
                     anonymous=True, disable_signals=True)
     fi = FrankaInterface()
-    run(host='localhost', port=8080, debug=True)
+    run(host='localhost', port=8080, debug=True, quiet=True)

@@ -63,7 +63,7 @@ class ArmInterface:
         time.sleep(5)  # Time to connection to be enable (dirty)
         while True:
             try:
-                self._send_request({'type': 'ready'})
+                self._send_request_helper({'type': 'ready'})
             except (ConnectionRefusedError, http.client.CannotSendRequest):
                 continue
             break
@@ -153,7 +153,7 @@ class ArmInterface:
         """
         return copy.deepcopy(self._joint_efforts)
 
-    def get_ee_pose(self) -> Pose:
+    def get_current_pose(self) -> Pose:
         """Return the cartesian position of the end-effector
 
         Returns:
@@ -191,6 +191,17 @@ class ArmInterface:
         """
         pose = (*position, *orientation)
         self._send_call_helper('move_ee', pose)
+    
+    def displace_ee(self, displacement: Position) -> None:
+        """Move of the end-effector with respect to its current position.
+
+        Args:
+            displacement (float): End-effector relative move. `(0, 0, 0)`
+                means no movement.
+        """
+        position, orientation = self.get_current_pose()
+        position = [p+d for (p,d) in zip(position, displacement)]
+        return self.move_ee(position, orientation)
 
     def move_to_neutral(self):
         """Move the robot to go to its neutral position."""
@@ -204,19 +215,25 @@ class ArmInterface:
 if __name__ == '__main__':
     import time
     arm = ArmInterface()
-    print('Moving to neutral')
-    arm.move_to_neutral()
-    time.sleep(5)
+    # print('Moving to neutral')
+    # arm.move_to_neutral()
+    # time.sleep(3)
 
-    print('Moving joint 1')
-    arm.move_joint('panda_joint1', 0.2)
-    time.sleep(5)
+    # print('Moving joint 1')
+    # arm.move_joint('panda_joint1', 0.2)
+    # time.sleep(3)
 
-    print('Moving all joints')
-    goal = (-0, -pi/4, 0, -pi/2, 0.2, pi/3, 0)
-    arm.move_joints(goal)
-    time.sleep(5)
-
+    # print('Moving all joints')
+    # goal = (-0, -pi/4, 0, -pi/2, 0.2, pi/3, 0)
+    # arm.move_joints(goal)
+    # time.sleep(3)
     print('moving end effector')
-    arm.move_ee(position=(0.4, 0.1, 0.1), orientation=(1, 0, 0, 0))
-    time.sleep(5)
+    arm.move_ee((0.3, 0.4, 0.138), (-1, -0.0, -0.0, 0.0))
+
+    # print(arm.get_joint_position('panda_joint4'))
+    # print(arm.get_joint_positions())
+    # print(arm.get_joint_velocity('panda_joint6'))
+    # print(arm.get_joint_velocities())
+    # print(arm.get_joint_effort('panda_joint6'))
+    # print(arm.get_joint_efforts())
+    print(arm.get_current_pose())

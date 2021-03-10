@@ -14,7 +14,8 @@ class GripperInterface:
 
     def __init__(self):
         """Constructor."""
-
+        rospy.init_node('ArmInterfaceNode', anonymous=True,
+                        disable_signals=True)
         self.name = '/franka_gripper'
 
         ns = self.name + '/'
@@ -203,8 +204,5 @@ class GripperInterface:
 
 
 if __name__ == '__main__':
-    rospy.init_node("test_robot", anonymous=True)
     p = GripperInterface()
-    p.close()
-
     # rospy.spin()

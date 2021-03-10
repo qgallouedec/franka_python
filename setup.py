@@ -13,5 +13,5 @@ setup(
     url='https://github.com/qgallouedec/franka_gym',
     packages=find_packages(),
     version='0.0.0',
-    install_requires=['rospkg', 'defusedxml', 'netifaces']
+    install_requires=['rospkg', 'defusedxml', 'netifaces', 'opencv-python']
 )

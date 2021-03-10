@@ -44,5 +44,18 @@ arm.move_to_neutral()
 ## RealSense
 
 ```bash
+cd <catkin_ws>/src
+git clone https://github.com/IntelRealSense/realsense-ros.git -b development
+cd ..
+sudo rosdep init
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y
+catkin build
+source devel/setup.bash
+roslaunch realsense2_camera rs_camera.launch
+```
+In another terminal
+```bash
+source <catkin_ws>/devel/setup.bash
 roslaunch realsense2_camera rs_camera.launch 
 ```
