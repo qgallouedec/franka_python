@@ -44,6 +44,7 @@ the python2 script."""
 import json
 import sys
 import copy
+import threading
 
 import rospy
 import moveit_commander
@@ -128,10 +129,15 @@ def my_process():
         pass
     elif req_type == 'call':
         func = getattr(fi, req_obj['func_name'])
-        out = func(*req_obj['args'], **req_obj['kwargs'])
+        if req_obj['wait_for_result']:
+            out = func(*req_obj['args'], **req_obj['kwargs'])
+            return {'out': out}
+        else:
+            t = threading.Thread(target=func, args=req_obj['args'], kwargs=req_obj['kwargs'])
+            t.start()   
     else:
         raise RuntimeError('unknown req_type %s' %req_type)
-    return {'out': out}
+    return {'out': None}
 
 
 if __name__ == '__main__':

@@ -14,15 +14,13 @@ class GripperInterface:
 
     def __init__(self):
         """Constructor."""
-        rospy.init_node('ArmInterfaceNode', anonymous=True,
-                        disable_signals=True)
         self.name = '/franka_gripper'
 
         ns = self.name + '/'
 
         self._width = None
         self._joint_states_state_sub = subscriber(
-            ns + 'joint_states', JointState, self._joint_states_callback, tcp_nodelay=True)
+            ns + 'joint_states', JointState, self._joint_states_callback, tcp_nodelay=True, timeout=1)
 
         self._homing_action_client = actionlib.SimpleActionClient(
             '{}homing'.format(ns), HomingAction)
@@ -204,5 +202,7 @@ class GripperInterface:
 
 
 if __name__ == '__main__':
+    rospy.init_node('ArmInterfaceNode', anonymous=True,
+                        disable_signals=True)
     p = GripperInterface()
     # rospy.spin()

@@ -102,7 +102,8 @@ def subscriber(
             rospy.logdebug(
                 'Waiting for topic %s interrupted' % name)
             raise e
-        except rospy.ROSException:
+        except rospy.ROSException as e:
+            print(e)
             err_msg = 'Timeout exceded, no message received on topic %s' % name
             rospy.logerr(err_msg)
             raise TimeoutError(err_msg)

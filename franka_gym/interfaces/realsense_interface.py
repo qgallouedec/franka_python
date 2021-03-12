@@ -52,7 +52,6 @@ class RealSenseInterface:
                 colormap whose maximum value is determined by this argument.
                 Defaults to 2**16.
         """
-        rospy.init_node('RealSenseInterfaceNode', anonymous=True, disable_signals=True)
         self.ns = '/camera/'
 
         self.buffer_size = buffer_size
@@ -89,31 +88,31 @@ class RealSenseInterface:
         """Init subscribers."""
         self._color_img = None
         self._color_img_sub = subscriber(
-            self.ns + 'color/image_raw', Image, self._color_img_callback)
+            self.ns + 'color/image_raw', Image, self._color_img_callback, timeout=1)
 
         self._depth_img = None
         self._depth_img_sub = subscriber(
-            self.ns + 'depth/image_rect_raw', Image, self._depth_img_callback)
+            self.ns + 'depth/image_rect_raw', Image, self._depth_img_callback, timeout=1)
 
         self._color_camera_info = None
         self._color_camera_info_sub = subscriber(
             self.ns + 'color/camera_info', CameraInfo,
-            self._color_camera_info_callback)
+            self._color_camera_info_callback, timeout=1)
 
         self._depth_camera_info = None
         self._depth_camera_info_sub = subscriber(
             self.ns + 'depth/camera_info', CameraInfo,
-            self._depth_camera_info_callback)
+            self._depth_camera_info_callback, timeout=1)
 
         self._extrinsics_depth_to_color = None
         self._extrinsics_depth_to_color_sub = subscriber(
             self.ns + 'extrinsics/depth_to_color', Extrinsics,
-            self._extrinsics_depth_to_color_callback)
+            self._extrinsics_depth_to_color_callback, timeout=1)
 
         self._realsense2_camera_manager_bond = {}
         self._realsense2_camera_manager_bond_sub = subscriber(
             self.ns + 'realsense2_camera_manager/bond', Status,
-            self._realsense2_camera_manager_bond_callback)
+            self._realsense2_camera_manager_bond_callback, timeout=1)
 
         if self.display:
             threading.Thread(target=self._show, daemon=True).start()
@@ -312,6 +311,7 @@ class RealSenseInterface:
 
 
 if __name__ == '__main__':
+    rospy.init_node('RealSenseInterfaceNode', anonymous=True, disable_signals=True)
     r = RealSenseInterface(buffer_size = 10, display=True, display_fps=10, display_depth_min=30, display_depth_max=10000)
     import time
     time.sleep(3)

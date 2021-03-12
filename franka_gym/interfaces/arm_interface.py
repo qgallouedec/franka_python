@@ -16,6 +16,7 @@ Position = Tuple[float, float, float]
 Orientation = Tuple[float, float, float, float]
 Pose = Tuple[Position, Orientation]
 
+
 class ArmInterface:
     JOINT_NAMES = [
         'panda_joint1',
@@ -42,9 +43,9 @@ class ArmInterface:
                     0.7534]           # joint 7
 
     def __init__(self):
-        rospy.init_node('ArmInterfaceNode', anonymous=True,
-                        disable_signals=True)
-
+        if rospy.get_name() == '/unnamed':
+            raise Exception(
+                'You must init a node before the interface. Call `rospy.init_node()`')
         self._run_helper()
 
         self._joint_states_state_sub = subscriber(
@@ -79,9 +80,10 @@ class ArmInterface:
                 self._joint_velocities[idx] = msg.velocity[msg_idx]
                 self._joint_efforts[idx] = msg.effort[msg_idx]
 
-    def _send_call_helper(self, func_name: str, *args, **kwargs):
+    def _send_call_helper(self, func_name: str, wait_for_result: bool = True, *args, **kwargs):
         req = {'type': 'call',
                'func_name': func_name,
+               'wait_for_result': wait_for_result,
                'args': args,
                'kwargs': kwargs}
         ans = self._send_request_helper(req)
@@ -91,6 +93,7 @@ class ArmInterface:
         """Send request to arm_interface helper."""
         self._connection.request('POST', '/process', json.dumps(req))
         ans = self._connection.getresponse().read()
+        print(ans)
         return json.loads(ans)
 
     def get_joint_position(self, joint_name: str) -> float:
@@ -159,7 +162,7 @@ class ArmInterface:
         Returns:
             Pose: Position and orientation of the end-effector
         """
-        pose = self._send_call_helper('get_current_pose')
+        pose = self._send_call_helper('get_current_pose', True)
         return pose
 
     def move_joints(self, positions: Position) -> None:
@@ -168,7 +171,7 @@ class ArmInterface:
         Args:
             positions (float): Joint positions.
         """
-        self._send_call_helper('move_joints', positions)
+        self._send_call_helper('move_joints', False,  positions)
 
     def move_joint(self, joint_name: str, position: float) -> None:
         """Move joint toward the given position.
@@ -190,8 +193,8 @@ class ArmInterface:
             orientation (float): End-effector taget orientation (as quaternion).
         """
         pose = (*position, *orientation)
-        self._send_call_helper('move_ee', pose)
-    
+        self._send_call_helper('move_ee', False, pose)
+
     def displace_ee(self, displacement: Position) -> None:
         """Move of the end-effector with respect to its current position.
 
@@ -200,7 +203,7 @@ class ArmInterface:
                 means no movement.
         """
         position, orientation = self.get_current_pose()
-        position = [p+d for (p,d) in zip(position, displacement)]
+        position = [p+d for (p, d) in zip(position, displacement)]
         return self.move_ee(position, orientation)
 
     def move_to_neutral(self):
@@ -213,22 +216,26 @@ class ArmInterface:
 
 
 if __name__ == '__main__':
+    rospy.init_node('ArmInterfaceNode', anonymous=True,
+                    disable_signals=True)
     import time
     arm = ArmInterface()
-    # print('Moving to neutral')
-    # arm.move_to_neutral()
-    # time.sleep(3)
+    print('Moving to neutral')
+    arm.move_to_neutral()
+    time.sleep(3)
 
-    # print('Moving joint 1')
-    # arm.move_joint('panda_joint1', 0.2)
-    # time.sleep(3)
+    print('Moving joint 1')
+    arm.move_joint('panda_joint1', 0.2)
+    time.sleep(3)
 
-    # print('Moving all joints')
-    # goal = (-0, -pi/4, 0, -pi/2, 0.2, pi/3, 0)
-    # arm.move_joints(goal)
-    # time.sleep(3)
+    print('Moving all joints')
+    goal = (-0, -pi/4, 0, -pi/2, 0.2, pi/3, 0)
+    arm.move_joints(goal)
+    time.sleep(3)
+ 
     print('moving end effector')
-    arm.move_ee((0.3, 0.4, 0.138), (-1, -0.0, -0.0, 0.0))
+    arm.move_ee((0.3, 0.4, 0.19), (-1, -0.0, -0.0, 0.0))
+
 
     # print(arm.get_joint_position('panda_joint4'))
     # print(arm.get_joint_positions())
