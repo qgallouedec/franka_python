@@ -14,6 +14,9 @@ class GripperInterface:
 
     def __init__(self):
         """Constructor."""
+        if rospy.get_name() == '/unnamed':
+            raise Exception(
+                'You must init a node before the interface. Call `rospy.init_node()`')
         self.name = '/franka_gripper'
 
         ns = self.name + '/'
@@ -96,8 +99,8 @@ class GripperInterface:
         This is needed to estimate the maximum grasping width.
 
         Args:
-            wait_for_result (bool): if True, this method will block until
-                response is recieved from server.
+            wait_for_result (bool, optionnal): if True, this method will block
+                until response is recieved from server. Defaults False.
 
         Returns:
             bool: success
@@ -134,7 +137,7 @@ class GripperInterface:
         else:
             return True
 
-    def open(self) -> bool:
+    def open(self, wait_for_result: bool = False) -> bool:
         """Open gripper to max possible width.
 
         Returns:
@@ -142,8 +145,12 @@ class GripperInterface:
         """
         return self.move(self.MAX_WIDTH)
 
-    def close(self) -> bool:
+    def close(self, wait_for_result: bool = False) -> bool:
         """Close gripper to min possible width.
+
+        Args:
+            wait_for_result (bool): If True, this method will block until
+                response is recieved from server.
 
         Returns:
             bool: Whether command was successful.
@@ -152,6 +159,10 @@ class GripperInterface:
 
     def stop(self) -> bool:
         """Stops a currently running gripper move or grasp.
+
+        Args:
+            wait_for_result (bool): If True, this method will block until
+                response is recieved from server.
 
         Returns:
             bool: Whether command was successful.
@@ -202,7 +213,7 @@ class GripperInterface:
 
 
 if __name__ == '__main__':
-    rospy.init_node('ArmInterfaceNode', anonymous=True,
-                        disable_signals=True)
+    rospy.init_node('GripperInterfaceNode', anonymous=True,
+                    disable_signals=True)
     p = GripperInterface()
     # rospy.spin()

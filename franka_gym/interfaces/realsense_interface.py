@@ -52,6 +52,9 @@ class RealSenseInterface:
                 colormap whose maximum value is determined by this argument.
                 Defaults to 2**16.
         """
+        if rospy.get_name() == '/unnamed':
+            raise Exception(
+                'You must init a node before the interface. Call `rospy.init_node()`')
         self.ns = '/camera/'
 
         self.buffer_size = buffer_size
@@ -60,22 +63,23 @@ class RealSenseInterface:
         self.display = display
         self.display_fps = display_fps
         self._build_display_depth_range(display_depth_min, display_depth_max)
-        
 
         self._init_subscribers()
 
-    def _build_display_depth_range(self, display_depth_min, display_depth_max):
-        """[summary]
+    def _build_display_depth_range(
+            self, display_depth_min: int, display_depth_max: int):
+        """Clip and store the display depth range.
 
         Args:
-            display_depth_min ([type]): [description]
-            display_depth_max ([type]): [description]
+            display_depth_min (int): Minimal value of the displayed heatmap.
+            display_depth_max (int): Maximal value of the displayed heatmap.
 
         Raises:
-            ValueError: [description]
+            ValueError: If the args do not comply to 0 < depth_min < depth_max < 2**16.
         """
         if display_depth_min >= display_depth_max:
-            raise ValueError('`display_depth_min` must be lower than `display_depth_max`')
+            raise ValueError(
+                '`display_depth_min` must be lower than `display_depth_max`')
         if display_depth_min < 0:
             raise ValueError('`display_depth_min` must be greater than 0')
         if display_depth_max > 2**16:
@@ -83,44 +87,49 @@ class RealSenseInterface:
         self.display_depth_min = display_depth_min
         self.display_depth_max = display_depth_max
 
+    def _init_subscribers(self, timeout: float = 1) -> None:
+        """Init subscribers.
 
-    def _init_subscribers(self) -> None:
-        """Init subscribers."""
+        Args:
+            timeout (float, optional): Wait for a message on topic during
+                timeout seconds. Defaults to 1.
+        """
         self._color_img = None
         self._color_img_sub = subscriber(
-            self.ns + 'color/image_raw', Image, self._color_img_callback, timeout=1)
+            self.ns + 'color/image_raw', Image, self._color_img_callback,
+            timeout)
 
         self._depth_img = None
         self._depth_img_sub = subscriber(
-            self.ns + 'depth/image_rect_raw', Image, self._depth_img_callback, timeout=1)
+            self.ns + 'depth/image_rect_raw', Image, self._depth_img_callback,
+            timeout)
 
         self._color_camera_info = None
         self._color_camera_info_sub = subscriber(
             self.ns + 'color/camera_info', CameraInfo,
-            self._color_camera_info_callback, timeout=1)
+            self._color_camera_info_callback, timeout)
 
         self._depth_camera_info = None
         self._depth_camera_info_sub = subscriber(
             self.ns + 'depth/camera_info', CameraInfo,
-            self._depth_camera_info_callback, timeout=1)
+            self._depth_camera_info_callback, timeout)
 
         self._extrinsics_depth_to_color = None
         self._extrinsics_depth_to_color_sub = subscriber(
             self.ns + 'extrinsics/depth_to_color', Extrinsics,
-            self._extrinsics_depth_to_color_callback, timeout=1)
+            self._extrinsics_depth_to_color_callback, timeout)
 
         self._realsense2_camera_manager_bond = {}
         self._realsense2_camera_manager_bond_sub = subscriber(
             self.ns + 'realsense2_camera_manager/bond', Status,
-            self._realsense2_camera_manager_bond_callback, timeout=1)
+            self._realsense2_camera_manager_bond_callback, timeout)
 
         if self.display:
             threading.Thread(target=self._show, daemon=True).start()
 
-
-
     # Callbacks
     # region
+
     def _color_camera_info_callback(self, msg: CameraInfo) -> None:
         """Store the last color camera info in a private attribut.
 
@@ -282,12 +291,11 @@ class RealSenseInterface:
         """
         return copy.deepcopy(self._depth_camera_info)
 
-    def get_depth_img(self) -> Tuple[np.ndarray, np.ndarray]:
+    def get_depth_img(self) -> np.ndarray:
         """Return the last depth images (left and right).
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: Last depth image. The shape is
-                `(width, height)`.
+            np.ndarray: Last depth image. The shape is `(width, height)`.
         """
         return copy.deepcopy(self._depth_img)
 
@@ -311,8 +319,10 @@ class RealSenseInterface:
 
 
 if __name__ == '__main__':
-    rospy.init_node('RealSenseInterfaceNode', anonymous=True, disable_signals=True)
-    r = RealSenseInterface(buffer_size = 10, display=True, display_fps=10, display_depth_min=30, display_depth_max=10000)
+    rospy.init_node('RealSenseInterfaceNode',
+                    anonymous=True, disable_signals=True)
+    r = RealSenseInterface(buffer_size=10, display=True, display_fps=10,
+                           display_depth_min=30, display_depth_max=10000)
     import time
     time.sleep(3)
     print(len(r.get_color_imgs()))
