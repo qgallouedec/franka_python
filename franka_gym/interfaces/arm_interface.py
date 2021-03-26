@@ -1,3 +1,15 @@
+"""This module contains a interface with the arm of the Franka Emika Panda
+robot.
+
+Example:
+    >>> import rospy
+    >>> rospy.init_node('my_node')
+    >>> from franka_gym.interface import ArmInterface
+    >>> arm = ArmInterface()
+    >>> arm.move_to_neutral() # arm move to its neutral position
+    >>> arm.get_joint_positions()
+    (-0.018, -0.7601, 0.0198, -2.3421, 0.0298, 1.5412, 0.7534)
+"""
 import os
 import http.client
 import subprocess
@@ -11,10 +23,7 @@ import rospy
 from sensor_msgs.msg import JointState
 
 from franka_gym.utils import subscriber
-
-Position = Tuple[float, float, float]
-Orientation = Tuple[float, float, float, float]
-Pose = Tuple[Position, Orientation]
+from franka_gym.common import *
 
 
 class ArmInterface:
@@ -108,11 +117,11 @@ class ArmInterface:
         idx = self.JOINT_NAMES.index(joint_name)
         return self._joint_positions[idx]
 
-    def get_joint_positions(self) -> List[float]:
+    def get_joint_positions(self) -> JointPosition:
         """Return the last measured positions of every joints.
 
         Returns:
-            dict: Keys are joint names et values are positions.
+            JointPosition: The position of the joints.
         """
         return copy.deepcopy(self._joint_positions)
 
@@ -128,11 +137,11 @@ class ArmInterface:
         idx = self.JOINT_NAMES.index(joint_name)
         return self._joint_velocities[idx]
 
-    def get_joint_velocities(self) -> List[float]:
+    def get_joint_velocities(self) -> JointVelocity:
         """Return the last measured velocitiy of every joints.
 
         Returns:
-            list: Velocities.
+            JointVelocity: The velocity of the joints.
         """
         return copy.deepcopy(self._joint_velocities)
 
@@ -148,28 +157,28 @@ class ArmInterface:
         idx = self.JOINT_NAMES.index(joint_name)
         return self._joint_efforts[idx]
 
-    def get_joint_efforts(self) -> List[float]:
+    def get_joint_efforts(self) -> JointEffort:
         """Return the last measured effort of every joints.
 
         Returns:
-            list: Keys are joint names et values are efforts.
+            JointEffort: The effort of the joints.
         """
         return copy.deepcopy(self._joint_efforts)
 
     def get_current_pose(self) -> Pose:
-        """Return the cartesian position of the end-effector
+        """Return the cartesian position and orientation of the end-effector.
 
         Returns:
-            Pose: Position and orientation of the end-effector
+            Pose: Cartesian position and orientation of the end-effector.
         """
         pose = self._send_call_helper('get_current_pose', True)
         return pose
 
-    def move_joints(self, positions: Position) -> None:
-        """Move joint toward the given position.
+    def move_joints(self, positions: JointPosition) -> None:
+        """Move joints toward the given position.
 
         Args:
-            positions (float): Joint positions.
+            positions (JointPosition): The desired position of the joints.
         """
         self._send_call_helper('move_joints', False,  positions)
 
@@ -185,28 +194,30 @@ class ArmInterface:
         positions[idx] = position
         self.move_joints(positions)
 
-    def move_ee(self, position: Position, orientation: Orientation) -> None:
+    def move_ee(self, position: CartesianPosition, orientation: Orientation) -> None:
         """Move end-effector toward the given pose.
 
         Args:
-            position (float): End-effector taget position.
-            orientation (float): End-effector taget orientation (as quaternion).
+            position (CartesianPosition): End-effector taget position
+                as (x, y, z).
+            orientation (Orientation): End-effector taget orientation as
+                quaternion (x, y, z, w).
         """
         pose = (*position, *orientation)
         self._send_call_helper('move_ee', False, pose)
 
-    def displace_ee(self, displacement: Position) -> None:
+    def displace_ee(self, displacement: CartesianPosition) -> None:
         """Move of the end-effector with respect to its current position.
 
         Args:
-            displacement (float): End-effector relative move. `(0, 0, 0)`
-                means no movement.
+            displacement (CartesianPosition): End-effector relative move.
+                `(0, 0, 0)` means no movement.
         """
         position, orientation = self.get_current_pose()
         position = [p+d for (p, d) in zip(position, displacement)]
         return self.move_ee(position, orientation)
 
-    def move_to_neutral(self):
+    def move_to_neutral(self) -> None:
         """Move the robot to go to its neutral position."""
         self.move_joints(copy.deepcopy(self.NEUTRAL_POSE))
 
@@ -232,15 +243,14 @@ if __name__ == '__main__':
     goal = (-0, -pi/4, 0, -pi/2, 0.2, pi/3, 0)
     arm.move_joints(goal)
     time.sleep(3)
- 
+
     print('moving end effector')
-    arm.move_ee((0.3, 0.4, 0.19), (-1, -0.0, -0.0, 0.0))
+    arm.move_ee((0.3, 0.4, 0.19), (-1.0, -0.0, -0.0, 0.0))
 
-
-    # print(arm.get_joint_position('panda_joint4'))
-    # print(arm.get_joint_positions())
-    # print(arm.get_joint_velocity('panda_joint6'))
-    # print(arm.get_joint_velocities())
-    # print(arm.get_joint_effort('panda_joint6'))
-    # print(arm.get_joint_efforts())
+    print(arm.get_joint_position('panda_joint4'))
+    print(arm.get_joint_positions())
+    print(arm.get_joint_velocity('panda_joint6'))
+    print(arm.get_joint_velocities())
+    print(arm.get_joint_effort('panda_joint6'))
+    print(arm.get_joint_efforts())
     print(arm.get_current_pose())

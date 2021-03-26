@@ -27,7 +27,7 @@ jobs:
           rosdep update
           rosdep install -y --from-paths . --ignore-src --rosdistro melodic
           /bin/bash -c "source ../devel/setup.bash && catkin build"
-          pip install -e franka_gym
+          python3 -m pip install -e franka_gym
       - name: Run demo
         run: |
           /bin/bash -c "source ~/catkin_ws/devel/setup.bash"
