@@ -22,7 +22,9 @@ from typing import List, Tuple
 import rospy
 from sensor_msgs.msg import JointState
 
-from franka_gym.utils import subscriber
+from franka_msgs.msg import ErrorRecoveryActionGoal
+
+from franka_gym.utils import subscriber, publisher
 from franka_gym.common import *
 
 
@@ -57,13 +59,18 @@ class ArmInterface:
                 'You must init a node before the interface. Call `rospy.init_node()`')
         self._run_helper()
 
-        self._joint_states_state_sub = subscriber(
-            '/joint_states', JointState, self._joint_states_callback,
-            tcp_nodelay=True, timeout=1)
-
         self._joint_positions = list(range(7))
         self._joint_velocities = list(range(7))
         self._joint_efforts = list(range(7))
+
+        self._joint_states_sub = subscriber(
+            '/joint_states', JointState, self._joint_states_callback,
+            tcp_nodelay=True, timeout=1)
+
+        self._error_recovery_pub = publisher(
+            '/franka_control/error_recovery/goal', ErrorRecoveryActionGoal, timeout=1)
+
+        
 
     def _run_helper(self):
         """Run helper."""
@@ -220,6 +227,10 @@ class ArmInterface:
     def move_to_neutral(self) -> None:
         """Move the robot to go to its neutral position."""
         self.move_joints(copy.deepcopy(self.NEUTRAL_POSE))
+
+    def error_recovery(self):
+        """Recover from an error."""
+        return self._error_recovery_pub.publish(ErrorRecoveryActionGoal())
 
     def __del__(self):
         self._connection.close()
