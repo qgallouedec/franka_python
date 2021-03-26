@@ -37,6 +37,8 @@ Then, run this python script.
 
 ```python
 import franka_gym
+import rospy
+rospy.init_node('my_node')
 arm = franka_gym.ArmInterface() 
 arm.move_to_neutral()
 ```
