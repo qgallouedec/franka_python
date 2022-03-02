@@ -42,23 +42,21 @@ components, I created this script that allows bridging the python3 script with
 the python2 script."""
 
 import json
-import sys
-import copy
 import threading
 
-import rospy
+import geometry_msgs.msg
 import moveit_commander
 import moveit_msgs.msg
-import geometry_msgs.msg
-from bottle import run, post, request, response
+import rospy
+from bottle import post, request, run
 
 
 class FrankaInterface(object):
-    """FrankaInterface"""
+    """Franka Interface."""
 
     def __init__(self):
         super(FrankaInterface, self).__init__()
-        moveit_commander.roscpp_initialize([''])
+        moveit_commander.roscpp_initialize([""])
 
         self.robot = moveit_commander.RobotCommander()
         self.scene = moveit_commander.PlanningSceneInterface()
@@ -66,9 +64,8 @@ class FrankaInterface(object):
         self.move_group = moveit_commander.MoveGroupCommander(self.group_name)
 
         self.display_trajectory_publisher = rospy.Publisher(
-            '/move_group/display_planned_path',
-            moveit_msgs.msg.DisplayTrajectory,
-            queue_size=20)
+            "/move_group/display_planned_path", moveit_msgs.msg.DisplayTrajectory, queue_size=20
+        )
 
         self.planning_frame = self.move_group.get_planning_frame()
         self.eef_link = self.move_group.get_end_effector_link()
@@ -99,16 +96,16 @@ class FrankaInterface(object):
     def get_current_joint_values(self):
         joint_values = self.move_group.get_current_joint_values()
         return joint_values[:7]
-    
-    def get_current_pose(self, end_effector_link='panda_link8'):
+
+    def get_current_pose(self, end_effector_link="panda_link8"):
         """Get current pose"""
         pose = self.move_group.get_current_pose(end_effector_link).pose
         return (
             (pose.position.x, pose.position.y, pose.position.z),
-            (pose.orientation.x, pose.orientation.y,
-            pose.orientation.z, pose.orientation.w))
+            (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w),
+        )
 
-    def get_current_rpy(self, end_effector_link='panda_link8'):
+    def get_current_rpy(self, end_effector_link="panda_link8"):
         """Get current rool, pitch, yaw."""
         return self.move_group.get_current_rpy(end_effector_link)
 
@@ -120,28 +117,27 @@ class FrankaInterface(object):
         self.display_trajectory_publisher.publish(display_trajectory)
 
 
-@post('/process')
+@post("/process")
 def my_process():
     req_obj = json.loads(request.body.read())
-    req_type = req_obj['type']
+    req_type = req_obj["type"]
     out = None
-    if req_type == 'ready':
+    if req_type == "ready":
         pass
-    elif req_type == 'call':
-        func = getattr(fi, req_obj['func_name'])
-        if req_obj['wait_for_result']:
-            out = func(*req_obj['args'], **req_obj['kwargs'])
-            return {'out': out}
+    elif req_type == "call":
+        func = getattr(fi, req_obj["func_name"])
+        if req_obj["wait_for_result"]:
+            out = func(*req_obj["args"], **req_obj["kwargs"])
+            return {"out": out}
         else:
-            t = threading.Thread(target=func, args=req_obj['args'], kwargs=req_obj['kwargs'])
-            t.start()   
+            t = threading.Thread(target=func, args=req_obj["args"], kwargs=req_obj["kwargs"])
+            t.start()
     else:
-        raise RuntimeError('unknown req_type %s' %req_type)
-    return {'out': None}
+        raise RuntimeError("unknown req_type %s" % req_type)
+    return {"out": None}
 
 
-if __name__ == '__main__':
-    rospy.init_node('arm_interface_helper',
-                    anonymous=True, disable_signals=True)
+if __name__ == "__main__":
+    rospy.init_node("arm_interface_helper", anonymous=True, disable_signals=True)
     fi = FrankaInterface()
-    run(host='localhost', port=8080, debug=True, quiet=True)
+    run(host="localhost", port=8080, debug=True, quiet=True)

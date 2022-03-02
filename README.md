@@ -1,10 +1,11 @@
-# franka_gym
+# franka_python
 
 **Under construction, not guaranteed to work**
 
-[![Actions Status](https://github.com/qgallouedec/franka_gym/workflows/build/badge.svg)](https://github.com/qgallouedec/franka_gym/actions)
+Python-ROS interface for Franka robot.
 
-Real OpenAI gym interface for Franka Emika Panda robot
+[![Actions Status](https://github.com/qgallouedec/franka_python/workflows/build/badge.svg)](https://github.com/qgallouedec/franka_python/actions)
+
 
 ## Installation
 
@@ -21,13 +22,11 @@ rosdep install -y --from-paths . --ignore-src --rosdistro melodic
 - Clone the repository and install it.
 
 ```bash
-git clone https://github.com/qgallouedec/franka_gym
-pip install -e franka_gym
+git clone https://github.com/qgallouedec/franka_python
+pip install -e franka_python
 ```
 
 ## Usage
-
-### Arm interface
 
 Source your `catkin_ws` and run
 
@@ -35,31 +34,33 @@ Source your `catkin_ws` and run
 roslaunch panda_moveit_config panda_control_moveit_rviz.launch robot_ip:=<robot_ip>
 ```
 
-Then, run this python script.
+
+### Arm interface
+
+Example script to move the robot to its neutral position:
 
 ```python
-import franka_gym
+import franka_python
 import rospy
+
 rospy.init_node('my_node')
-arm = franka_gym.ArmInterface() 
+arm = franka_python.ArmInterface() 
 arm.move_to_neutral()
 ```
 
-## RealSense
 
-```bash
-cd <catkin_ws>/src
-git clone https://github.com/IntelRealSense/realsense-ros.git -b development
-cd ..
-sudo rosdep init
-rosdep update
-rosdep install --from-paths src --ignore-src -r -y
-catkin build
-source devel/setup.bash
-roslaunch realsense2_camera rs_camera.launch
-```
-In another terminal
-```bash
-source <catkin_ws>/devel/setup.bash
-roslaunch realsense2_camera rs_camera.launch 
+### Gripper iterface
+
+Example script to open then close the gripper:
+
+```python
+import franka_python
+import rospy
+import time
+
+rospy.init_node('my_node')
+gripper = franka_python.GripperInterface() 
+gripper.open()
+time.sleep(2)
+gripper.close()
 ```

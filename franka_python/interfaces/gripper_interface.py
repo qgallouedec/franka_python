@@ -1,12 +1,11 @@
 import actionlib
 import rospy
+from franka_gripper.msg import (GraspAction, GraspEpsilon, GraspGoal,
+                                HomingAction, HomingGoal, MoveAction, MoveGoal,
+                                StopAction, StopGoal)
 from sensor_msgs.msg import JointState
-from franka_gripper.msg import (GraspAction, GraspGoal,
-                                HomingAction, HomingGoal,
-                                MoveAction, MoveGoal,
-                                StopAction, StopGoal,
-                                GraspEpsilon)
-from franka_gym.utils import subscriber
+
+from franka_python.utils import subscriber
 
 
 class GripperInterface:
@@ -14,25 +13,21 @@ class GripperInterface:
 
     def __init__(self):
         """Constructor."""
-        if rospy.get_name() == '/unnamed':
-            raise Exception(
-                'You must init a node before the interface. Call `rospy.init_node()`')
-        self.name = '/franka_gripper'
+        if rospy.get_name() == "/unnamed":
+            raise Exception("You must init a node before the interface. Call `rospy.init_node()`")
+        self.name = "/franka_gripper"
 
-        ns = self.name + '/'
+        ns = self.name + "/"
 
         self._width = None
         self._joint_states_state_sub = subscriber(
-            ns + 'joint_states', JointState, self._joint_states_callback, tcp_nodelay=True, timeout=1)
+            ns + "joint_states", JointState, self._joint_states_callback, tcp_nodelay=True, timeout=1
+        )
 
-        self._homing_action_client = actionlib.SimpleActionClient(
-            '{}homing'.format(ns), HomingAction)
-        self._grasp_action_client = actionlib.SimpleActionClient(
-            '{}grasp'.format(ns), GraspAction)
-        self._move_action_client = actionlib.SimpleActionClient(
-            '{}move'.format(ns), MoveAction)
-        self._stop_action_client = actionlib.SimpleActionClient(
-            '{}stop'.format(ns), StopAction)
+        self._homing_action_client = actionlib.SimpleActionClient("{}homing".format(ns), HomingAction)
+        self._grasp_action_client = actionlib.SimpleActionClient("{}grasp".format(ns), GraspAction)
+        self._move_action_client = actionlib.SimpleActionClient("{}move".format(ns), MoveAction)
+        self._stop_action_client = actionlib.SimpleActionClient("{}stop".format(ns), StopAction)
 
         self._homing_action_client.wait_for_server()
         self._grasp_action_client.wait_for_server()
@@ -49,8 +44,8 @@ class GripperInterface:
         """Called when a message is published on `joint_states` topic.
         Update private attribute `_joint_state`.
         """
-        idx = msg.name.index('panda_finger_joint1')
-        self._width = 2*msg.position[idx]
+        idx = msg.name.index("panda_finger_joint1")
+        self._width = 2 * msg.position[idx]
 
     def _clip_width(self, width: float) -> float:
         """Clip the width to in interval [MIN_WIDTH, MAX_WIDTH].
@@ -64,23 +59,19 @@ class GripperInterface:
             float: Clipped width.
         """
         if width > self.MAX_WIDTH:
-            rospy.logwarn('The width is clipped at {} (maximum permissible '
-                          'width).'.format(self.MAX_WIDTH))
+            rospy.logwarn("The width is clipped at {} (maximum permissible " "width).".format(self.MAX_WIDTH))
             width = self.MAX_WIDTH
         if width < self.MIN_WIDTH:
-            rospy.logwarn('The width is clipped at {} (minimum permissible '
-                          'width).'.format(self.MIN_WIDTH))
+            rospy.logwarn("The width is clipped at {} (minimum permissible " "width).".format(self.MIN_WIDTH))
             width = self.MIN_WIDTH
         return width
 
     def _clip_force(self, force):
         if force > self.MAX_FORCE:
-            rospy.logwarn('The force is clipped at {} (maximum permissible '
-                          'force).'.format(self.MAX_FORCE))
+            rospy.logwarn("The force is clipped at {} (maximum permissible " "force).".format(self.MAX_FORCE))
             force = self.MAX_FORCE
         if force < self.MIN_FORCE:
-            rospy.logwarn('The force is clipped at {} (minimum permissible '
-                          'force).'.format(self.MIN_FORCE))
+            rospy.logwarn("The force is clipped at {} (minimum permissible " "force).".format(self.MIN_FORCE))
             force = self.MIN_FORCE
         return force
 
@@ -108,13 +99,11 @@ class GripperInterface:
         goal = HomingGoal()
         self._homing_action_client.send_goal(goal)
         if wait_for_result:
-            return self._homing_action_client.wait_for_result(
-                timeout=rospy.Duration(15.))
+            return self._homing_action_client.wait_for_result(timeout=rospy.Duration(15.0))
         else:
             return True
 
-    def move(self, width: float, speed: float = 0.05,
-             wait_for_result: bool = False) -> bool:
+    def move(self, width: float, speed: float = 0.05, wait_for_result: bool = False) -> bool:
         """Moves the gripper fingers to a specified width.
 
         Args:
@@ -132,8 +121,7 @@ class GripperInterface:
         goal.speed = speed
         self._move_action_client.send_goal(goal)
         if wait_for_result:
-            return self._move_action_client.wait_for_result(
-                timeout=rospy.Duration(15.))
+            return self._move_action_client.wait_for_result(timeout=rospy.Duration(15.0))
         else:
             return True
 
@@ -169,11 +157,17 @@ class GripperInterface:
         """
         goal = StopGoal()
         self._stop_action_client.send_goal(goal)
-        return self._stop_action_client.wait_for_result(rospy.Duration(15.))
+        return self._stop_action_client.wait_for_result(rospy.Duration(15.0))
 
-    def grasp(self, width: float, force: float, speed: float = 0.05,
-              epsilon_inner: float = 0.005, epsilon_outer: float = 0.005,
-              wait_for_result: bool = False) -> bool:
+    def grasp(
+        self,
+        width: float,
+        force: float,
+        speed: float = 0.05,
+        epsilon_inner: float = 0.005,
+        epsilon_outer: float = 0.005,
+        wait_for_result: bool = False,
+    ) -> bool:
         """Grasps an object.
 
         First, the gripper moves with speed `speed` in the direction of `width`:
@@ -189,7 +183,7 @@ class GripperInterface:
             width (float): Size [m] of the object to grasp.
             force (float): Grasping force [N].
             speed (float, optionnal): Closing speed [m/s]. Default to 0.05.
-            epsilon_inner (float, optionnal): Maximum inner tolerated deviation 
+            epsilon_inner (float, optionnal): Maximum inner tolerated deviation
                 [m]. Defaults to 0.005.
             epsilon_outer (float, optionnal): Maximum outter tolerated
                 deviation [m]. Defaults to 0.005.
@@ -206,14 +200,12 @@ class GripperInterface:
         goal.epsilon = GraspEpsilon(inner=epsilon_inner, outer=epsilon_outer)
         self._grasp_action_client.send_goal(goal)
         if wait_for_result:
-            return self._grasp_action_client.wait_for_result(
-                timeout=rospy.Duration(15.))
+            return self._grasp_action_client.wait_for_result(timeout=rospy.Duration(15.0))
         else:
             return True
 
 
-if __name__ == '__main__':
-    rospy.init_node('GripperInterfaceNode', anonymous=True,
-                    disable_signals=True)
+if __name__ == "__main__":
+    rospy.init_node("GripperInterfaceNode", anonymous=True, disable_signals=True)
     p = GripperInterface()
     # rospy.spin()

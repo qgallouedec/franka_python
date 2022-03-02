@@ -1,62 +1,63 @@
-"""This module contains a interface with the arm of the Franka Emika Panda
-robot.
-
-Example:
-    >>> import rospy
-    >>> rospy.init_node('my_node')
-    >>> from franka_gym.interface import ArmInterface
-    >>> arm = ArmInterface()
-    >>> arm.move_to_neutral() # arm move to its neutral position
-    >>> arm.get_joint_positions()
-    (-0.018, -0.7601, 0.0198, -2.3421, 0.0298, 1.5412, 0.7534)
-"""
-import os
-import http.client
-import subprocess
-from math import pi
-import json
 import copy
+import http.client
+import json
+import os
+import subprocess
 import time
-from typing import List, Tuple
+from math import pi
 
 import rospy
+from franka_msgs.msg import ErrorRecoveryActionGoal
 from sensor_msgs.msg import JointState
 
-from franka_msgs.msg import ErrorRecoveryActionGoal
-
-from franka_gym.utils import subscriber, publisher
-from franka_gym.common import *
+from franka_python.common import *
+from franka_python.utils import publisher, subscriber
 
 
 class ArmInterface:
     JOINT_NAMES = [
-        'panda_joint1',
-        'panda_joint2',
-        'panda_joint3',
-        'panda_joint4',
-        'panda_joint5',
-        'panda_joint6',
-        'panda_joint7']
+        "panda_joint1",
+        "panda_joint2",
+        "panda_joint3",
+        "panda_joint4",
+        "panda_joint5",
+        "panda_joint6",
+        "panda_joint7",
+    ]
 
-    LOWER_LIMIT = [-2.8973, -1.7628,  # joints 1 and 2
-                   -2.8973, -3.0718,  # joints 3 and 4
-                   -2.8973, -0.0175,  # joints 5 and 6
-                   -2.8973]           # joint 7
+    LOWER_LIMIT = [
+        -2.8973,  # joint 1
+        -1.7628,  # joint 2
+        -2.8973,  # ...
+        -3.0718,
+        -2.8973,
+        -0.0175,
+        -2.8973,
+    ]
 
-    UPPER_LIMIT = [2.8973, 1.7628,   # joints 1 and 2
-                   2.8973, -0.0698,  # joints 3 and 4
-                   2.8973, 3.7525,   # joints 5 and 6
-                   2.8973]           # joint 7
+    UPPER_LIMIT = [
+        2.8973,  # joint 1
+        1.7628,  # joints 2
+        2.8973,  # ...
+        -0.0698,
+        2.8973,
+        3.7525,
+        2.8973,
+    ]
 
-    NEUTRAL_POSE = [-0.018, -0.7601,  # joints 1 and 2
-                    0.0198, -2.3421,  # joints 3 and 4
-                    0.0298, 1.5412,   # joints 5 and 6
-                    0.7534]           # joint 7
+    NEUTRAL_POSE = [
+        -0.018,  # joint 1
+        -0.7601,  # joint 2
+        0.0198,  # ...
+        -2.3421,
+        0.0298,
+        1.5412,
+        0.7534,
+    ]
 
     def __init__(self):
-        if rospy.get_name() == '/unnamed':
-            raise Exception(
-                'You must init a node before the interface. Call `rospy.init_node()`')
+        if rospy.get_name() == "/unnamed":
+            raise Exception("You must init a node before the interface. Call `rospy.init_node()`")
         self._run_helper()
 
         self._joint_positions = list(range(7))
@@ -64,23 +65,20 @@ class ArmInterface:
         self._joint_efforts = list(range(7))
 
         self._joint_states_sub = subscriber(
-            '/joint_states', JointState, self._joint_states_callback,
-            tcp_nodelay=True, timeout=1)
+            "/joint_states", JointState, self._joint_states_callback, tcp_nodelay=True, timeout=1
+        )
 
-        self._error_recovery_pub = publisher(
-            '/franka_control/error_recovery/goal', ErrorRecoveryActionGoal, timeout=1)
-
-        
+        self._error_recovery_pub = publisher("/franka_control/error_recovery/goal", ErrorRecoveryActionGoal, timeout=1)
 
     def _run_helper(self):
         """Run helper."""
         path = os.path.dirname(os.path.abspath(__file__))
-        self._helper_proc = subprocess.Popen(path+'/arm_interface_helper.py')
-        self._connection = http.client.HTTPConnection('localhost', 8080)
+        self._helper_proc = subprocess.Popen(path + "/arm_interface_helper.py")
+        self._connection = http.client.HTTPConnection("localhost", 8080)
         time.sleep(5)  # Time to connection to be enable (dirty)
         while True:
             try:
-                self._send_request_helper({'type': 'ready'})
+                self._send_request_helper({"type": "ready"})
             except (ConnectionRefusedError, http.client.CannotSendRequest):
                 continue
             break
@@ -97,17 +95,13 @@ class ArmInterface:
                 self._joint_efforts[idx] = msg.effort[msg_idx]
 
     def _send_call_helper(self, func_name: str, wait_for_result: bool = True, *args, **kwargs):
-        req = {'type': 'call',
-               'func_name': func_name,
-               'wait_for_result': wait_for_result,
-               'args': args,
-               'kwargs': kwargs}
+        req = {"type": "call", "func_name": func_name, "wait_for_result": wait_for_result, "args": args, "kwargs": kwargs}
         ans = self._send_request_helper(req)
-        return ans['out']
+        return ans["out"]
 
     def _send_request_helper(self, req: dict) -> str:
         """Send request to arm_interface helper."""
-        self._connection.request('POST', '/process', json.dumps(req))
+        self._connection.request("POST", "/process", json.dumps(req))
         ans = self._connection.getresponse().read()
         print(ans)
         return json.loads(ans)
@@ -178,7 +172,7 @@ class ArmInterface:
         Returns:
             Pose: Cartesian position and orientation of the end-effector.
         """
-        pose = self._send_call_helper('get_current_pose', True)
+        pose = self._send_call_helper("get_current_pose", True)
         return pose
 
     def move_joints(self, positions: JointPosition) -> None:
@@ -187,7 +181,7 @@ class ArmInterface:
         Args:
             positions (JointPosition): The desired position of the joints.
         """
-        self._send_call_helper('move_joints', False,  positions)
+        self._send_call_helper("move_joints", False, positions)
 
     def move_joint(self, joint_name: str, position: float) -> None:
         """Move joint toward the given position.
@@ -211,7 +205,7 @@ class ArmInterface:
                 quaternion (x, y, z, w).
         """
         pose = (*position, *orientation)
-        self._send_call_helper('move_ee', False, pose)
+        self._send_call_helper("move_ee", False, pose)
 
     def displace_ee(self, displacement: CartesianPosition) -> None:
         """Move of the end-effector with respect to its current position.
@@ -221,7 +215,7 @@ class ArmInterface:
                 `(0, 0, 0)` means no movement.
         """
         position, orientation = self.get_current_pose()
-        position = [p+d for (p, d) in zip(position, displacement)]
+        position = [p + d for (p, d) in zip(position, displacement)]
         return self.move_ee(position, orientation)
 
     def move_to_neutral(self) -> None:
@@ -237,31 +231,13 @@ class ArmInterface:
         self._helper_proc.terminate()
 
 
-if __name__ == '__main__':
-    rospy.init_node('ArmInterfaceNode', anonymous=True,
-                    disable_signals=True)
-    import time
+if __name__ == "__main__":
+    rospy.init_node("ArmInterfaceNode", anonymous=True, disable_signals=True)
     arm = ArmInterface()
-    print('Moving to neutral')
+    print("Moving to neutral")
     arm.move_to_neutral()
     time.sleep(3)
 
-    print('Moving joint 1')
-    arm.move_joint('panda_joint1', 0.2)
+    print("Moving joint 1")
+    arm.move_joint("panda_joint1", 0.2)
     time.sleep(3)
-
-    print('Moving all joints')
-    goal = (-0, -pi/4, 0, -pi/2, 0.2, pi/3, 0)
-    arm.move_joints(goal)
-    time.sleep(3)
-
-    print('moving end effector')
-    arm.move_ee((0.3, 0.4, 0.19), (-1.0, -0.0, -0.0, 0.0))
-
-    print(arm.get_joint_position('panda_joint4'))
-    print(arm.get_joint_positions())
-    print(arm.get_joint_velocity('panda_joint6'))
-    print(arm.get_joint_velocities())
-    print(arm.get_joint_effort('panda_joint6'))
-    print(arm.get_joint_efforts())
-    print(arm.get_current_pose())
